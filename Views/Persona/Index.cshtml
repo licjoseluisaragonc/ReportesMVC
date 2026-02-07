@@ -1,0 +1,213 @@
+﻿@* /* REPORTES BD EXAMEN JARAGON
+=========================================================================================
+* Descripción: View Persona bootstrap decored
+* Historial de cambios:
+* ---------------------------------------------------------------------------------------
+*    Revisión   | Fecha      | Desarrollador                    | Resumen del cambio
+* ---------------------------------------------------------------------------------------
+*      1       | 06/02/2026 | Lic. José Luis Aragón Cervantes   | Creación
+* ---------------------------------------------------------------------------------------
+*/
+ *@
+
+@model List<ReportesMVC.Models.DTOPersona>
+@{
+    ViewData["Title"] = "Personas";
+}
+
+<div class="container py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0">Personas</h2>
+            <div class="text-muted">Doble click para editar</div>
+        </div>
+
+        <form asp-controller="Accesos" asp-action="Logout" method="post" class="m-0">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-danger">Salir</button>
+        </form>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="tblPersonas">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:90px;">ID</th>
+                            <th>NOMBRE</th>
+                            <th>APPATERNO</th>
+                            <th>APMATERNO</th>
+                            <th>CORREO</th>
+                            <th>TELEFONO</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model)
+                        {
+                            <tr class="persona-row" data-id="@p.IIDPERSONA" style="cursor:pointer;">
+                                <td class="fw-semibold">@p.IIDPERSONA</td>
+                                <td>@p.NOMBRE</td>
+                                <td>@p.APPATERNO</td>
+                                <td>@p.APMATERNO</td>
+                                <td>@p.CORREO</td>
+                                <td>@p.TELEFONOOCELULAR1</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="small text-muted mt-2">
+                Mostrando @Model.Count registros
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Component Modal -->
+<div class="modal fade" id="mdlPersona" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar Persona</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="msgModal" class="alert alert-danger d-none"></div>
+
+                <form id="frmPersona" method="post" class="row g-3">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" id="IIDPERSONA" name="IIDPERSONA" />
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">NOMBRE</label>
+                        <input class="form-control" id="NOMBRE" name="NOMBRE" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">APPATERNO</label>
+                        <input class="form-control" id="APPATERNO" name="APPATERNO" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">APMATERNO</label>
+                        <input class="form-control" id="APMATERNO" name="APMATERNO" />
+                    </div>
+
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">IIDSEXO</label>
+                        <input class="form-control" id="IIDSEXO" name="IIDSEXO" type="number" />
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label fw-semibold">CORREO</label>
+                        <input class="form-control" id="CORREO" name="CORREO" type="email" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">TELEFONOOCELULAR1</label>
+                        <input class="form-control" id="TELEFONOOCELULAR1" name="TELEFONOOCELULAR1" />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">IIDTIPODOCUMENTO</label>
+                        <input class="form-control" id="IIDTIPODOCUMENTO" name="IIDTIPODOCUMENTO" type="number" />
+                    </div>
+
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold">NUMEROIDENTIFICACION</label>
+                        <input class="form-control" id="NUMEROIDENTIFICACION" name="NUMEROIDENTIFICACION" />
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardar">Guardar cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        (() => {
+            const modalEl = document.getElementById('mdlPersona');
+            const modal = new bootstrap.Modal(modalEl);
+            const msg = document.getElementById('msgModal');
+
+            function showError(text){
+                msg.textContent = text;
+                msg.classList.remove('d-none');
+            }
+            function clearError(){
+                msg.classList.add('d-none');
+                msg.textContent = '';
+            }
+
+            async function abrirModal(id){
+                clearError();
+
+                const res = await fetch(`/Persona/Detalle?id=${id}`, { headers: { 'Accept':'application/json' } });
+                if(!res.ok){
+                    showError('No se pudo obtener el detalle.');
+                    modal.show();
+                    return;
+                }
+
+                const p = await res.json();
+           
+                //Test de datos de persona
+                console.log("DETALLE JSON:", p);
+                alert("NOMBRE=" + (p.nombre ?? "NULL"));
+
+                // llenar campos Modal
+                document.getElementById('IIDPERSONA').value = p.iidpersona ?? '';
+                document.getElementById('NOMBRE').value = p.nombre ?? '';
+                document.getElementById('APPATERNO').value = p.appaterno ?? '';
+                document.getElementById('APMATERNO').value = p.apmaterno ?? '';
+                document.getElementById('IIDSEXO').value = p.iidsexo ?? '';
+                document.getElementById('CORREO').value = p.correo ?? '';
+                document.getElementById('TELEFONOOCELULAR1').value = p.telefonoocelulaR1 ?? ''; 
+                document.getElementById('IIDTIPODOCUMENTO').value = p.iidtipodocumento ?? '';
+                document.getElementById('NUMEROIDENTIFICACION').value = p.numeroidentificacion ?? '';
+
+                modal.show();
+            }
+
+            // doble click en fila
+            document.querySelectorAll('.persona-row').forEach(row => {
+                row.addEventListener('dblclick', () => {
+                    const id = row.getAttribute('data-id');
+                    abrirModal(id);
+                });
+            });
+
+            // guardar
+            document.getElementById('btnGuardar').addEventListener('click', async () => {
+                clearError();
+
+                const form = document.getElementById('frmPersona');
+                const formData = new FormData(form);
+
+                const res = await fetch('/Persona/Actualizar', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json().catch(() => null);
+
+                if(!res.ok || !data || data.ok !== true){
+                    showError((data && data.message) ? data.message : 'No se pudo guardar.');
+                    return;
+                }
+
+                // recarga para reflejar cambios 
+                window.location.reload();
+            });
+        })();
+    </script>
+}
