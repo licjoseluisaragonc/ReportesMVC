@@ -7,13 +7,19 @@
 * ---------------------------------------------------------------------------------------
 *      1       | 06/02/2026 | Lic. José Luis Aragón Cervantes   | Creación
 * ---------------------------------------------------------------------------------------
-*/
- *@
+*/*@
 
 @model List<ReportesMVC.Models.DTOPersona>
 @{
     ViewData["Title"] = "Personas";
 }
+
+<style>
+    .selected-row {
+        background-color: #e9f3ff !important;
+        border-left: 4px solid #0d6efd;
+    }
+</style>
 
 <div class="container py-3">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -65,7 +71,7 @@
     </div>
 </div>
 
-<!-- Component Modal -->
+<!-- Modal -->
 <div class="modal fade" id="mdlPersona" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-4">
@@ -125,6 +131,7 @@
             </div>
 
             <div class="modal-footer">
+                <button type="button" class="btn btn-outline-danger" id="btnDelete">Eliminar</button>
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <button type="button" class="btn btn-primary" id="btnGuardar">Guardar cambios</button>
             </div>
@@ -139,42 +146,47 @@
             const modal = new bootstrap.Modal(modalEl);
             const msg = document.getElementById('msgModal');
 
-            function showError(text){
+            const $ = (id) => document.getElementById(id);
+
+            function showError(text) {
                 msg.textContent = text;
                 msg.classList.remove('d-none');
             }
-            function clearError(){
+            function clearError() {
                 msg.classList.add('d-none');
                 msg.textContent = '';
             }
 
-            async function abrirModal(id){
+            function fillModal(p) {
+                $('IIDPERSONA').value = p.iidpersona ?? '';
+                $('NOMBRE').value = p.nombre ?? '';
+                $('APPATERNO').value = p.appaterno ?? '';
+                $('APMATERNO').value = p.apmaterno ?? '';
+                $('IIDSEXO').value = p.iidsexo ?? '';
+                $('CORREO').value = p.correo ?? '';
+
+                // OJO: aquí estaba "telefonoocelulaR1" (R mayúscula rara). Si tu API manda "telefonoocelular1", esto es lo correcto:
+                $('TELEFONOOCELULAR1').value = p.telefonoocelular1 ?? '';
+
+                $('IIDTIPODOCUMENTO').value = p.iidtipodocumento ?? '';
+                $('NUMEROIDENTIFICACION').value = p.numeroidentificacion ?? '';
+            }
+
+            async function abrirModal(id) {
                 clearError();
 
-                const res = await fetch(`/Persona/Detalle?id=${id}`, { headers: { 'Accept':'application/json' } });
-                if(!res.ok){
+                const res = await fetch(`/Persona/Detalle?id=${encodeURIComponent(id)}`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!res.ok) {
                     showError('No se pudo obtener el detalle.');
                     modal.show();
                     return;
                 }
 
                 const p = await res.json();
-           
-                //Test de datos de persona
-                console.log("DETALLE JSON:", p);
-                alert("NOMBRE=" + (p.nombre ?? "NULL"));
-
-                // llenar campos Modal
-                document.getElementById('IIDPERSONA').value = p.iidpersona ?? '';
-                document.getElementById('NOMBRE').value = p.nombre ?? '';
-                document.getElementById('APPATERNO').value = p.appaterno ?? '';
-                document.getElementById('APMATERNO').value = p.apmaterno ?? '';
-                document.getElementById('IIDSEXO').value = p.iidsexo ?? '';
-                document.getElementById('CORREO').value = p.correo ?? '';
-                document.getElementById('TELEFONOOCELULAR1').value = p.telefonoocelulaR1 ?? ''; 
-                document.getElementById('IIDTIPODOCUMENTO').value = p.iidtipodocumento ?? '';
-                document.getElementById('NUMEROIDENTIFICACION').value = p.numeroidentificacion ?? '';
-
+                fillModal(p);
                 modal.show();
             }
 
@@ -187,11 +199,10 @@
             });
 
             // guardar
-            document.getElementById('btnGuardar').addEventListener('click', async () => {
+            $('btnGuardar').addEventListener('click', async () => {
                 clearError();
 
-                const form = document.getElementById('frmPersona');
-                const formData = new FormData(form);
+                const formData = new FormData($('frmPersona'));
 
                 const res = await fetch('/Persona/Actualizar', {
                     method: 'POST',
@@ -200,14 +211,42 @@
 
                 const data = await res.json().catch(() => null);
 
-                if(!res.ok || !data || data.ok !== true){
+                if (!res.ok || !data || data.ok !== true) {
                     showError((data && data.message) ? data.message : 'No se pudo guardar.');
                     return;
                 }
 
-                // recarga para reflejar cambios 
                 window.location.reload();
             });
+
+            // delete
+            $('btnDelete').addEventListener('click', async () => {
+                clearError();
+
+                const id = $('IIDPERSONA').value;
+                console.log('ID seleccionado = ' + id);
+
+                if (!id) { showError('No hay persona seleccionada.'); return; }
+                if (!confirm('¿Seguro que deseas eliminar esta persona?')) return;
+
+                const formData = new FormData($('frmPersona')); // <-- incluye el token
+
+                const res = await fetch(`/Persona/Delete?id=${encodeURIComponent(id)}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json().catch(() => null);
+
+                if (!res.ok || !data || data.ok !== true) {
+                    showError((data && data.message) ? data.message : 'No se pudo eliminar registro.');
+                    return;
+                }
+
+                window.location.reload();
+            });
+
+
         })();
     </script>
 }

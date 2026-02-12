@@ -63,7 +63,7 @@ public class DTOPersona
 
     [Required]
     [StringLength(50)]
-    public string ESTADOPAIS { get; set; } = ""; // NOT NULL
+    public string ESTADOPAIS { get; set; } = ""; 
 
     public int? IIDTIPODOCUMENTO { get; set; }
 

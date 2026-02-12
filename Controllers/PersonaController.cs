@@ -91,5 +91,80 @@ namespace ReportesMVC.Controllers
                 return StatusCode(500, new { ok = false, message = "Error al guardar." });
             }
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                var hijos = await _db.TratamientoMedicoPersona
+                    .Where(x => x.IIDPERSONA == id)
+                    .ToListAsync();
+
+                _db.TratamientoMedicoPersona.RemoveRange(hijos);
+
+                var medicamentos = await _db.MedicamentoConsumoPersona
+                    .Where(x => x.IIDPERSONA == id)
+                    .ToListAsync();
+
+                _db.MedicamentoConsumoPersona.RemoveRange(medicamentos);
+
+                var enf = await _db.EnfermedadesIntervencionesPersona
+                    .Where(x => x.IIDPERSONA == id)
+                    .ToListAsync();
+
+                _db.EnfermedadesIntervencionesPersona.RemoveRange(enf);
+
+                var observaciones = await _db.ObservacionesPersona
+                    .Where(x => x.IIDPERSONA == id)
+                    .ToListAsync();
+
+                _db.ObservacionesPersona.RemoveRange(observaciones);
+
+                var fichamedic = await _db.FichaMedica
+                    .Where(x => x.IIDPERSONA == id)
+                    .ToListAsync();
+
+                _db.FichaMedica.RemoveRange(fichamedic);
+
+                var expedVacunac = await _db.ExpedienteVacunacion
+                      .Where(x => x.IIDPERSONA == id)
+                      .ToListAsync();
+
+                _db.ExpedienteVacunacion.RemoveRange(expedVacunac);
+
+
+                var horaactividad = await _db.HoraDiaActividadPersona
+                  .Where(x => x.IIDPERSONA == id)
+                  .ToListAsync();
+
+                _db.HoraDiaActividadPersona.RemoveRange(horaactividad);
+
+                await _db.SaveChangesAsync();
+
+                var p = await _db.Personas.FirstOrDefaultAsync(x => x.IIDPERSONA == id);
+                if (p == null)
+                    return NotFound(new { ok = false, message = "Persona no encontrada." });
+
+                _db.Personas.Remove(p);
+
+                await _db.SaveChangesAsync();
+
+                return Ok(new { ok = true });
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "DbUpdateException al eliminar Persona {Id}", id);
+                return StatusCode(409, new { ok = false, message = "No se puede eliminar: existen datos relacionados." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar Persona {Id}", id);
+                return StatusCode(500, new { ok = false, message = "Error al eliminar." });
+            }
+        }
+
+
     }
 }
